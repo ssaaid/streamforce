@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreamForce — IPTV Premium</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #08090d; --surface: #0f1118; --surface2: #161922;
+  --border: rgba(255,255,255,0.07); --accent: #e63c2f; --accent2: #ff6b35;
+  --text: #f0f0ef; --muted: #6b7280; --gold: #f5c842;
+  --success: #4ade80; --danger: #ef4444;
+}
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 16px; line-height: 1.6; overflow-x: hidden; }
+
+/* ---- MODAL OVERLAY ---- */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 2.5rem; width: 100%; max-width: 440px; position: relative; animation: fadeUp 0.25s ease; }
+@keyframes fadeUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+.modal-close { position: absolute; top: 1.2rem; right: 1.2rem; background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; line-height: 1; }
+.modal-close:hover { color: var(--text); }
+.modal h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 1px; margin-bottom: 0.3rem; }
+.modal p.subtitle { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.8rem; }
+.form-group { margin-bottom: 1.2rem; }
+.form-group label { display: block; font-size: 0.82rem; font-weight: 500; color: var(--muted); margin-bottom: 0.4rem; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.75rem 1rem; color: var(--text); font-family: inherit; font-size: 0.92rem; outline: none;
+  transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+.form-group textarea { resize: vertical; min-height: 100px; }
+.form-group select option { background: var(--surface2); }
+.btn-full { width: 100%; padding: 0.9rem; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; border: none; transition: background 0.2s, transform 0.15s; }
+.btn-red { background: var(--accent); color: #fff; }
+.btn-red:hover { background: #c9321f; transform: translateY(-1px); }
+.btn-outline-full { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.btn-outline-full:hover { background: var(--surface2); }
+.modal-switch { text-align: center; margin-top: 1.2rem; font-size: 0.85rem; color: var(--muted); }
+.modal-switch a { color: var(--accent); cursor: pointer; text-decoration: none; }
+.modal-switch a:hover { text-decoration: underline; }
+.alert { padding: 0.8rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem; display: none; }
+.alert.show { display: block; }
+.alert-error { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+.alert-success { background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.3); color: #86efac; }
+
+/* ---- NAV ---- */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.2rem 5vw;
+  background: rgba(8,9,13,0.9); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; letter-spacing: 2px; }
+.logo span { color: var(--accent); }
+.nav-links { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+.nav-links a { color: var(--muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); }
+.nav-btn { background: var(--accent); color: #fff !important; padding: 0.45rem 1.1rem; border-radius: 6px; font-weight: 700 !important; cursor: pointer; border: none; font-size: 0.9rem; font-family: inherit; }
+.nav-btn:hover { background: #c9321f; }
+#nav-user-area { display: flex; align-items: center; gap: 1rem; }
+.nav-username { font-size: 0.85rem; color: var(--muted); }
+.nav-username strong { color: var(--text); }
+
+/* ---- HERO ---- */
+.hero { min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8rem 5vw 6rem; position: relative; overflow: hidden; }
+.hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(230,60,47,0.18) 0%, transparent 70%); pointer-events: none; }
+.badge { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(230,60,47,0.12); border: 1px solid rgba(230,60,47,0.3); color: #f87d72; font-size: 0.78rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; padding: 0.4rem 1rem; border-radius: 100px; margin-bottom: 2rem; }
+.badge::before { content: '●'; font-size: 0.5rem; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(4rem, 10vw, 7.5rem); line-height: 0.95; letter-spacing: 2px; margin-bottom: 1.5rem; }
+h1 .grad { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hero-sub { font-size: 1.1rem; color: var(--muted); max-width: 500px; margin: 0 auto 2.5rem; font-weight: 300; }
+.hero-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+.btn-primary { background: var(--accent); color: #fff; padding: 0.85rem 2rem; border-radius: 8px; font-weight: 700; font-size: 0.95rem; text-decoration: none; border: none; cursor: pointer; font-family: inherit; transition: background 0.2s, transform 0.15s; }
+.btn-primary:hover { background: #c9321f; transform: translateY(-2px); }
+.btn-outline { background: transparent; color: var(--text); padding: 0.85rem 2rem; border-radius: 8px; font-weight: 500; font-size: 0.95rem; text-decoration: none; border: 1px solid var(--border); cursor: pointer; font-family: inherit; transition: border-color 0.2s, transform 0.15s; }
+.btn-outline:hover { border-color: rgba(255,255,255,0.25); transform: translateY(-2px); }
+.stats { display: flex; justify-content: center; gap: 4rem; margin-top: 5rem; flex-wrap: wrap; }
+.stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 3rem; line-height: 1; }
+.stat-num span { color: var(--accent); }
+.stat-label { font-size: 0.8rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 0.3rem; }
+
+/* ---- SECTIONS ---- */
+section { padding: 6rem 5vw; }
+.section-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 0.8rem; }
+h2 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(2.2rem, 4vw, 3.5rem); line-height: 1; letter-spacing: 1px; margin-bottom: 1rem; }
+.section-intro { color: var(--muted); font-size: 1rem; font-weight: 300; max-width: 520px; margin-bottom: 3rem; }
+
+/* FEATURES */
+.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }
+.feat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; transition: border-color 0.2s, transform 0.2s; }
+.feat-card:hover { border-color: rgba(230,60,47,0.3); transform: translateY(-4px); }
+.feat-icon { width: 48px; height: 48px; background: rgba(230,60,47,0.12); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 1.2rem; }
+.feat-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+.feat-card p { font-size: 0.85rem; color: var(--muted); }
+
+/* PRICING */
+.pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; max-width: 900px; margin: 0 auto; }
+.plan { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 2.5rem 2rem; position: relative; transition: transform 0.2s; }
+.plan:hover { transform: translateY(-4px); }
+.plan.featured { border-color: var(--accent); background: var(--surface2); }
+.plan-badge { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 0.3rem 1rem; border-radius: 100px; white-space: nowrap; }
+.plan-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 1px; }
+.plan-desc { font-size: 0.8rem; color: var(--muted); margin-bottom: 1.5rem; }
+.plan-price { display: flex; align-items: baseline; gap: 0.3rem; margin-bottom: 1.5rem; }
+.price-amount { font-family: 'Bebas Neue', sans-serif; font-size: 3.5rem; line-height: 1; }
+.price-currency, .price-period { font-size: 0.9rem; color: var(--muted); }
+.plan-features { list-style: none; margin-bottom: 2rem; }
+.plan-features li { display: flex; align-items: center; gap: 0.7rem; font-size: 0.85rem; color: var(--muted); padding: 0.4rem 0; }
+.plan-features .ok { color: var(--success); }
+.plan-features .no { color: var(--danger); }
+.plan-btn { display: block; text-align: center; padding: 0.85rem; border-radius: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none; font-family: inherit; transition: background 0.2s, transform 0.15s; }
+.plan-btn-out { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.plan-btn-out:hover { background: var(--surface2); }
+.plan-btn-solid { background: var(--accent); color: #fff; }
+.plan-btn-solid:hover { background: #c9321f; transform: translateY(-1px); }
+
+/* CHANNELS */
+.ch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; }
+.ch-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; font-size: 0.82rem; font-weight: 500; color: var(--muted); transition: border-color 0.2s, color 0.2s; }
+.ch-pill:hover { border-color: rgba(230,60,47,0.4); color: var(--text); }
+.ch-pill .flag { font-size: 1.5rem; display: block; margin-bottom: 0.4rem; }
+
+/* CONTACT */
+.contact-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; }
+.contact-info p { color: var(--muted); font-size: 0.92rem; line-height: 1.8; margin-bottom: 2rem; }
+.contact-methods { display: flex; flex-direction: column; gap: 1rem; }
+.contact-method { display: flex; align-items: center; gap: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.2rem; font-size: 0.88rem; }
+.cm-icon { font-size: 1.4rem; }
+.cm-label { font-size: 0.75rem; color: var(--muted); }
+.cm-value { font-weight: 500; }
+.contact-form-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 2.5rem; }
+
+/* FAQ */
+.faq-wrap { max-width: 680px; }
+.faq-item { border-bottom: 1px solid var(--border); padding: 1.3rem 0; }
+.faq-q { display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 500; font-size: 0.95rem; gap: 1rem; }
+.faq-toggle { width: 28px; height: 28px; background: var(--surface); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: var(--muted); flex-shrink: 0; transition: transform 0.25s, background 0.2s; }
+.faq-item.open .faq-toggle { transform: rotate(45deg); background: var(--accent); color: #fff; }
+.faq-a { max-height: 0; overflow: hidden; font-size: 0.87rem; color: var(--muted); line-height: 1.7; transition: max-height 0.35s ease, padding 0.3s; }
+.faq-item.open .faq-a { max-height: 200px; padding-top: 0.9rem; }
+
+/* DASHBOARD */
+#dashboard { display: none; min-height: 100vh; padding: 8rem 5vw 4rem; }
+#dashboard.visible { display: block; }
+.dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem; }
+.dash-header h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; }
+.plan-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 2rem; margin-bottom: 2rem; }
+.plan-card.active { border-color: var(--success); }
+.plan-card.inactive { border-color: var(--danger); }
+.plan-status { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; border-radius: 100px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.status-active { background: rgba(74,222,128,0.12); color: var(--success); }
+.status-inactive { background: rgba(239,68,68,0.12); color: var(--danger); }
+.status-pending { background: rgba(245,200,66,0.12); color: var(--gold); }
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+.dash-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; }
+.dash-card .label { font-size: 0.78rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.5rem; }
+.dash-card .value { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; }
+.orders-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.orders-table th { text-align: left; color: var(--muted); font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); }
+.orders-table td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); }
+.orders-table tr:last-child td { border-bottom: none; }
+.tag { display: inline-block; padding: 0.25rem 0.7rem; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+.tag-pending { background: rgba(245,200,66,0.15); color: var(--gold); }
+.tag-confirmed { background: rgba(74,222,128,0.15); color: var(--success); }
+.tag-rejected { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+/* CTA banner */
+.cta-banner { background: linear-gradient(135deg, #1a0a09, #200e10); border: 1px solid rgba(230,60,47,0.25); border-radius: 24px; padding: 4rem 3rem; text-align: center; position: relative; overflow: hidden; }
+.cta-banner::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(230,60,47,0.15) 0%, transparent 70%); pointer-events: none; }
+.cta-guarantee { font-size: 0.8rem; color: var(--muted); margin-top: 1.2rem; }
+.cta-guarantee span { color: var(--success); }
+
+footer { border-top: 1px solid var(--border); padding: 2.5rem 5vw; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.footer-links { display: flex; gap: 2rem; flex-wrap: wrap; }
+.footer-links a { font-size: 0.82rem; color: var(--muted); text-decoration: none; }
+.footer-copy { font-size: 0.8rem; color: var(--muted); }
+
+/* ORDER MODAL */
+.order-plan-info { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+.order-plan-name { font-weight: 600; }
+.order-plan-price { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; color: var(--accent); }
+
+@media (max-width: 700px) {
+  nav .nav-links { display: none; }
+  .contact-wrap { grid-template-columns: 1fr; }
+  .stats { gap: 2rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="login-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('login-modal')">✕</button>
+    <h2>CONNEXION</h2>
+    <p class="subtitle">Accédez à votre espace client</p>
+    <div class="alert alert-error" id="login-error"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="vous@exemple.com"></div>
+    <div class="form-group"><label>Mot de passe</label><input type="password" id="login-password" placeholder="••••••••"></div>
+    <button class="btn-full btn-red" onclick="handleLogin()">Se connecter</button>
+    <div class="modal-switch">Pas encore de compte ? <a onclick="switchModal('login-modal','register-modal')">S'inscrire</a></div>
+  </div>
+</div>
+
+<!-- REGISTER MODAL -->
+<div class="modal-overlay" id="register-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('register-modal')">✕</button>
+    <h2>INSCRIPTION</h2>
+    <p class="subtitle">Créez votre compte gratuit</p>
+    <div class="alert alert-error" id="register-error"></div>
+    <div class="alert alert-success" id="register-success"></div>
+    <div class="form-group"><label>Nom complet</label><input type="text" id="reg-name" placeholder="Votre nom"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="vous@exemple.com"></div>
+    <div class="form-group"><label>Mot de passe</label><input type="password" id="reg-password" placeholder="Min. 6 caractères"></div>
+    <button class="btn-full btn-red" onclick="handleRegister()">Créer mon compte</button>
+    <div class="modal-switch">Déjà un compte ? <a onclick="switchModal('register-modal','login-modal')">Se connecter</a></div>
+  </div>
+</div>
+
+<!-- ORDER MODAL -->
+<div class="modal-overlay" id="order-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('order-modal')">✕</button>
+    <h2>COMMANDER</h2>
+    <p class="subtitle">Finalisez votre abonnement</p>
+    <div class="alert alert-error" id="order-error"></div>
+    <div class="alert alert-success" id="order-success"></div>
+    <div class="order-plan-info">
+      <div>
+        <div class="label" style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Plan sélectionné</div>
+        <div class="order-plan-name" id="order-plan-name">Trimestriel</div>
+      </div>
+      <div class="order-plan-price" id="order-plan-price">22€</div>
+    </div>
+    <div class="form-group">
+      <label>Méthode de paiement</label>
+      <select id="order-payment">
+        <option value="">Choisissez...</option>
+        <option value="paypal">PayPal</option>
+        <option value="card">Carte bancaire (Visa/Mastercard)</option>
+        <option value="crypto">Crypto (Bitcoin, USDT)</option>
+        <option value="virement">Virement bancaire</option>
+      </select>
+    </div>
+    <button class="btn-full btn-red" onclick="handleOrder()">Confirmer la commande →</button>
+    <p style="font-size:0.78rem;color:var(--muted);text-align:center;margin-top:1rem;">Vous recevrez les instructions de paiement par email. Activation après confirmation.</p>
+  </div>
+</div>
+
+<!-- CONTACT MODAL -->
+<div class="modal-overlay" id="contact-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('contact-modal')">✕</button>
+    <h2>CONTACT</h2>
+    <p class="subtitle">Envoyez-nous un message</p>
+    <div class="alert alert-error" id="contact-error"></div>
+    <div class="alert alert-success" id="contact-success"></div>
+    <div class="form-group"><label>Nom</label><input type="text" id="c-name" placeholder="Votre nom"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="c-email" placeholder="vous@exemple.com"></div>
+    <div class="form-group"><label>Sujet</label>
+      <select id="c-subject">
+        <option>Demande d'abonnement</option>
+        <option>Problème technique</option>
+        <option>Test gratuit</option>
+        <option>Autre</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Message</label><textarea id="c-message" placeholder="Votre message..."></textarea></div>
+    <button class="btn-full btn-red" onclick="handleContact()">Envoyer le message</button>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Stream<span>Force</span></div>
+  <ul class="nav-links">
+    <li><a href="#features">Fonctionnalités</a></li>
+    <li><a href="#channels">Chaînes</a></li>
+    <li><a href="#pricing">Tarifs</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <div id="nav-user-area">
+    <button class="nav-btn" onclick="openModal('login-modal')" id="btn-login">Connexion</button>
+    <button class="nav-btn" onclick="openModal('register-modal')" id="btn-register" style="background:transparent;border:1px solid var(--border);color:var(--text);">Inscription</button>
+  </div>
+</nav>
+
+<!-- ===================== SITE VITRINE ===================== -->
+<div id="site-content">
+
+<!-- HERO -->
+<section class="hero">
+  <div>
+    <div class="badge">🔴 Streaming en direct</div>
+    <h1>REGARDEZ TOUT<br><span class="grad">PARTOUT. MAINTENANT.</span></h1>
+    <p class="hero-sub">Plus de 20 000 chaînes, films et séries en qualité 4K. Sans engagement, sans satellite.</p>
+    <div class="hero-btns">
+      <button class="btn-primary" onclick="openOrderModal('trimestriel')">Essai Gratuit 24h →</button>
+      <a href="#pricing" class="btn-outline">Voir les offres</a>
+    </div>
+    <div class="stats">
+      <div><div class="stat-num">20<span>K+</span></div><div class="stat-label">Chaînes Live</div></div>
+      <div><div class="stat-num">80<span>K+</span></div><div class="stat-label">VOD & Séries</div></div>
+      <div><div class="stat-num">99<span>%</span></div><div class="stat-label">Uptime garanti</div></div>
+      <div><div class="stat-num">4<span>K</span></div><div class="stat-label">Ultra HD</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" style="background:var(--surface2);">
+  <div class="section-label">Nos avantages</div>
+  <h2>POURQUOI STREAMFORCE ?</h2>
+  <p class="section-intro">Une technologie de pointe pour une expérience de streaming sans compromis.</p>
+  <div class="features-grid">
+    <div class="feat-card"><div class="feat-icon">🔥</div><h3>Qualité 4K Ultra HD</h3><p>Full HD, FHD et 4K disponibles. La meilleure résolution du marché.</p></div>
+    <div class="feat-card"><div class="feat-icon">⚡</div><h3>Anti-freeze & Anti-coupure</h3><p>Serveurs haute performance avec CDN mondial pour une lecture fluide.</p></div>
+    <div class="feat-card"><div class="feat-icon">📼</div><h3>Catch-up TV 7 jours</h3><p>Revoyez jusqu'à 7 jours de programmes en replay à tout moment.</p></div>
+    <div class="feat-card"><div class="feat-icon">🎬</div><h3>80 000+ VOD & Séries</h3><p>Bibliothèque massive mise à jour chaque semaine avec les dernières sorties.</p></div>
+    <div class="feat-card"><div class="feat-icon">🌐</div><h3>Compatible tous appareils</h3><p>Smart TV, Android, iOS, PC, Kodi, Tivimate — tout est couvert.</p></div>
+    <div class="feat-card"><div class="feat-icon">🛡️</div><h3>Support 24h/7j</h3><p>Réponse en moins de 30 min par chat, WhatsApp ou Telegram.</p></div>
+  </div>
+</section>
+
+<!-- CHANNELS -->
+<section id="channels">
+  <div class="section-label">Contenu mondial</div>
+  <h2>TOUTES LES CHAÎNES DU MONDE</h2>
+  <p class="section-intro">France, Maghreb, Europe, USA et bien plus — tout inclus dans votre abonnement.</p>
+  <div class="ch-grid">
+    <div class="ch-pill"><span class="flag">🇫🇷</span>France</div>
+    <div class="ch-pill"><span class="flag">🇩🇿</span>Algérie</div>
+    <div class="ch-pill"><span class="flag">🇲🇦</span>Maroc</div>
+    <div class="ch-pill"><span class="flag">🇹🇳</span>Tunisie</div>
+    <div class="ch-pill"><span class="flag">🇬🇧</span>UK</div>
+    <div class="ch-pill"><span class="flag">🇺🇸</span>USA</div>
+    <div class="ch-pill"><span class="flag">🇪🇸</span>Espagne</div>
+    <div class="ch-pill"><span class="flag">🇹🇷</span>Turquie</div>
+    <div class="ch-pill"><span class="flag">🇮🇹</span>Italie</div>
+    <div class="ch-pill"><span class="flag">🇩🇪</span>Allemagne</div>
+    <div class="ch-pill"><span class="flag">🇸🇦</span>Arabie Saoudite</div>
+    <div class="ch-pill"><span class="flag">🌍</span>+50 pays</div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" style="background:var(--surface2);">
+  <div style="text-align:center;margin-bottom:3.5rem;">
+    <div class="section-label">Abonnements</div>
+    <h2>NOS OFFRES SIMPLES</h2>
+    <p class="section-intro" style="margin:0 auto;">Sans engagement. Activation immédiate. Paiement 100% sécurisé.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="plan">
+      <div class="plan-name">Mensuel</div>
+      <div class="plan-desc">Idéal pour découvrir</div>
+      <div class="plan-price"><span class="price-currency">€</span><span class="price-amount">9</span><span class="price-period">/mois</span></div>
+      <ul class="plan-features">
+        <li><span class="ok">✓</span> 20 000+ chaînes live</li>
+        <li><span class="ok">✓</span> Qualité Full HD</li>
+        <li><span class="ok">✓</span> 1 connexion simultanée</li>
+        <li><span class="ok">✓</span> VOD incluse</li>
+        <li><span class="no">✗</span> Catch-up TV</li>
+        <li><span class="no">✗</span> Multi-écrans</li>
+      </ul>
+      <button class="plan-btn plan-btn-out" onclick="openOrderModal('mensuel')">Choisir ce plan</button>
+    </div>
+    <div class="plan featured">
+      <div class="plan-badge">⭐ Le plus populaire</div>
+      <div class="plan-name">Trimestriel</div>
+      <div class="plan-desc">Meilleur rapport qualité-prix</div>
+      <div class="plan-price"><span class="price-currency">€</span><span class="price-amount">22</span><span class="price-period">/3 mois</span></div>
+      <ul class="plan-features">
+        <li><span class="ok">✓</span> 20 000+ chaînes live</li>
+        <li><span class="ok">✓</span> Qualité 4K Ultra HD</li>
+        <li><span class="ok">✓</span> 2 connexions simultanées</li>
+        <li><span class="ok">✓</span> VOD + Catch-up 7j</li>
+        <li><span class="ok">✓</span> Support prioritaire</li>
+        <li><span class="no">✗</span> Multi-écrans (3+)</li>
+      </ul>
+      <button class="plan-btn plan-btn-solid" onclick="openOrderModal('trimestriel')">Choisir ce plan</button>
+    </div>
+    <div class="plan">
+      <div class="plan-name">Annuel</div>
+      <div class="plan-desc">Économisez 55% sur l'année</div>
+      <div class="plan-price"><span class="price-currency">€</span><span class="price-amount">49</span><span class="price-period">/an</span></div>
+      <ul class="plan-features">
+        <li><span class="ok">✓</span> 20 000+ chaînes live</li>
+        <li><span class="ok">✓</span> Qualité 4K Ultra HD</li>
+        <li><span class="ok">✓</span> 4 connexions simultanées</li>
+        <li><span class="ok">✓</span> VOD + Catch-up 7j</li>
+        <li><span class="ok">✓</span> Support VIP 24h/7j</li>
+        <li><span class="ok">✓</span> Accès bêta fonctions</li>
+      </ul>
+      <button class="plan-btn plan-btn-out" onclick="openOrderModal('annuel')">Choisir ce plan</button>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="section-label">FAQ</div>
+  <h2>QUESTIONS FRÉQUENTES</h2>
+  <div class="faq-wrap">
+    <div class="faq-item open">
+      <div class="faq-q" onclick="toggleFaq(this)"><span>Comment installer sur ma Smart TV ?</span><div class="faq-toggle">+</div></div>
+      <div class="faq-a">Après votre abonnement, vous recevrez vos identifiants par email. Téléchargez Smart IPTV, IPTV Smarters ou TiviMate depuis l'app store de votre TV et entrez vos codes. Notre guide pas à pas est disponible dans votre espace client.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span>Y a-t-il un test gratuit ?</span><div class="faq-toggle">+</div></div>
+      <div class="faq-a">Oui ! Nous offrons un test gratuit de 24 heures sans engagement et sans carte bancaire. Contactez-nous via le formulaire ou sur WhatsApp pour activer votre essai immédiatement.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span>Combien d'appareils simultanément ?</span><div class="faq-toggle">+</div></div>
+      <div class="faq-a">1 connexion pour le Mensuel, 2 pour le Trimestriel, 4 pour l'Annuel. Des connexions supplémentaires sont disponibles en option.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span>Quels modes de paiement ?</span><div class="faq-toggle">+</div></div>
+      <div class="faq-a">PayPal, carte bancaire (Visa/Mastercard), crypto-monnaie (Bitcoin, USDT) et virement bancaire. Paiement sécurisé, activation instantanée après réception.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span>Compatible VPN ?</span><div class="faq-toggle">+</div></div>
+      <div class="faq-a">Oui, notre service est entièrement compatible avec les VPN sans perte de performance.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section>
+  <div class="cta-banner">
+    <div class="section-label">Offre limitée</div>
+    <h2>PRÊT À COUPER LE CÂBLE ?</h2>
+    <p style="color:var(--muted);max-width:440px;margin:1rem auto 2rem;font-weight:300;">Rejoignez plus de 50 000 abonnés et profitez de l'IPTV premium dès aujourd'hui.</p>
+    <button class="btn-primary" style="font-size:1rem;padding:1rem 2.5rem;" onclick="openModal('register-modal')">Créer mon compte gratuit</button>
+    <div class="cta-guarantee"><span>✓</span> Activation en 5 min &nbsp;·&nbsp; <span>✓</span> Satisfait ou remboursé 48h &nbsp;·&nbsp; <span>✓</span> Sans engagement</div>
+  </div>
+</section>
+
+<footer>
+  <div class="logo">Stream<span>Force</span></div>
+  <div class="footer-links">
+    <a href="#">CGU</a><a href="#">Confidentialité</a>
+    <a href="#" onclick="openModal('contact-modal');return false;">Contact</a>
+    <a href="#">WhatsApp</a><a href="#">Telegram</a>
+  </div>
+  <div class="footer-copy">© 2025 StreamForce</div>
+</footer>
+
+</div><!-- end site-content -->
+
+<!-- ===================== DASHBOARD CLIENT ===================== -->
+<div id="dashboard">
+  <div class="dash-header">
+    <div>
+      <div class="section-label">Espace Client</div>
+      <h2>MON TABLEAU DE BORD</h2>
+    </div>
+    <button class="btn-outline" onclick="logout()">Se déconnecter</button>
+  </div>
+
+  <div class="plan-card" id="dash-plan-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <div class="label" style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.5rem;">Mon abonnement</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;" id="dash-plan-name">Aucun abonnement actif</div>
+        <div style="font-size:0.85rem;color:var(--muted);margin-top:0.3rem;" id="dash-plan-expiry"></div>
+      </div>
+      <span class="plan-status" id="dash-plan-status"></span>
+    </div>
+    <div style="margin-top:1.5rem;">
+      <button class="btn-primary" onclick="showSection('pricing')" style="font-size:0.9rem;padding:0.7rem 1.5rem;" id="dash-subscribe-btn">Souscrire un abonnement</button>
+    </div>
+  </div>
+
+  <div class="dash-grid">
+    <div class="dash-card"><div class="label">Connexions autorisées</div><div class="value" id="dash-connections">—</div></div>
+    <div class="dash-card"><div class="label">Chaînes disponibles</div><div class="value">20 000+</div></div>
+    <div class="dash-card"><div class="label">VOD & Films</div><div class="value">80 000+</div></div>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;">
+    <h3 style="font-size:1rem;font-weight:600;margin-bottom:1.2rem;">Mes commandes</h3>
+    <div id="dash-orders-wrap">
+      <p style="color:var(--muted);font-size:0.88rem;">Aucune commande pour le moment.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:2rem;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;">
+    <h3 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Support & Contact</h3>
+    <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem;">Besoin d'aide ? Notre équipe répond en moins de 30 minutes.</p>
+    <button class="btn-primary" style="font-size:0.88rem;padding:0.65rem 1.5rem;" onclick="openModal('contact-modal')">Envoyer un message</button>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+const PLANS_INFO = {
+  mensuel: { name: 'Mensuel', price: '9€', connections: 1 },
+  trimestriel: { name: 'Trimestriel', price: '22€', connections: 2 },
+  annuel: { name: 'Annuel', price: '49€', connections: 4 }
+};
+
+let currentUser = null;
+let selectedPlan = null;
+
+// --- Auth helpers ---
+function getToken() { return localStorage.getItem('sf_token'); }
+function setToken(t) { localStorage.setItem('sf_token', t); }
+function clearToken() { localStorage.removeItem('sf_token'); }
+
+async function apiCall(path, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  const token = getToken();
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erreur réseau');
+  return data;
+}
+
+// --- Modal helpers ---
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); clearAlerts(); }
+function switchModal(from, to) { closeModal(from); openModal(to); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
+});
+function clearAlerts() {
+  document.querySelectorAll('.alert').forEach(a => { a.classList.remove('show'); a.textContent = ''; });
+}
+function showAlert(id, msg, type = 'error') {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = `alert alert-${type} show`;
+}
+
+// --- Nav update ---
+function updateNav(user) {
+  const area = document.getElementById('nav-user-area');
+  if (user) {
+    area.innerHTML = `
+      <span class="nav-username">Bonjour, <strong>${user.name}</strong></span>
+      ${user.role === 'admin' ? '<a href="/admin-panel" target="_blank" class="nav-btn" style="background:var(--gold);color:#000;">Admin</a>' : ''}
+      <button class="nav-btn" onclick="logout()">Déconnexion</button>
+    `;
+  } else {
+    area.innerHTML = `
+      <button class="nav-btn" onclick="openModal('login-modal')" id="btn-login">Connexion</button>
+      <button class="nav-btn" onclick="openModal('register-modal')" id="btn-register" style="background:transparent;border:1px solid var(--border);color:var(--text);">Inscription</button>
+    `;
+  }
+}
+
+// --- Show/hide dashboard ---
+function showDashboard(user) {
+  document.getElementById('site-content').style.display = 'none';
+  document.getElementById('dashboard').classList.add('visible');
+  updateNav(user);
+  loadDashboard(user);
+}
+function showSite() {
+  document.getElementById('site-content').style.display = '';
+  document.getElementById('dashboard').classList.remove('visible');
+}
+function showSection(id) {
+  showSite();
+  setTimeout(() => document.getElementById(id).scrollIntoView({ behavior: 'smooth' }), 100);
+}
+
+// --- Dashboard load ---
+async function loadDashboard(user) {
+  const now = new Date();
+  const card = document.getElementById('dash-plan-card');
+  const planName = document.getElementById('dash-plan-name');
+  const planExpiry = document.getElementById('dash-plan-expiry');
+  const planStatus = document.getElementById('dash-plan-status');
+  const connections = document.getElementById('dash-connections');
+  const subscribeBtn = document.getElementById('dash-subscribe-btn');
+
+  if (user.plan && user.planExpiry && new Date(user.planExpiry) > now) {
+    const info = PLANS_INFO[user.plan] || {};
+    const expiry = new Date(user.planExpiry).toLocaleDateString('fr-FR');
+    planName.textContent = 'Abonnement ' + (info.name || user.plan);
+    planExpiry.textContent = 'Expire le ' + expiry;
+    planStatus.textContent = '✓ Actif';
+    planStatus.className = 'plan-status status-active';
+    card.className = 'plan-card active';
+    connections.textContent = info.connections || '—';
+    subscribeBtn.textContent = 'Renouveler mon abonnement';
+  } else {
+    planName.textContent = 'Aucun abonnement actif';
+    planExpiry.textContent = user.plan ? 'Abonnement expiré' : 'Souscrivez un plan pour profiter de StreamForce';
+    planStatus.textContent = '✗ Inactif';
+    planStatus.className = 'plan-status status-inactive';
+    card.className = 'plan-card inactive';
+    connections.textContent = '0';
+    subscribeBtn.textContent = 'Souscrire un abonnement';
+  }
+
+  try {
+    const orders = await apiCall('/orders/my');
+    const wrap = document.getElementById('dash-orders-wrap');
+    if (!orders.length) { wrap.innerHTML = '<p style="color:var(--muted);font-size:0.88rem;">Aucune commande pour le moment.</p>'; return; }
+    wrap.innerHTML = `
+      <table class="orders-table">
+        <thead><tr><th>Plan</th><th>Prix</th><th>Paiement</th><th>Statut</th><th>Date</th></tr></thead>
+        <tbody>${orders.reverse().map(o => `
+          <tr>
+            <td>${o.planName}</td>
+            <td>${o.price}€</td>
+            <td>${o.paymentMethod}</td>
+            <td><span class="tag tag-${o.status}">${o.status === 'pending' ? 'En attente' : o.status === 'confirmed' ? 'Confirmé' : 'Refusé'}</span></td>
+            <td>${new Date(o.createdAt).toLocaleDateString('fr-FR')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch {}
+}
+
+// --- Auth actions ---
+async function handleLogin() {
+  clearAlerts();
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+  try {
+    const data = await apiCall('/auth/login', 'POST', { email, password });
+    setToken(data.token);
+    currentUser = data.user;
+    closeModal('login-modal');
+    if (currentUser.role === 'admin') { window.location.href = '/admin-panel'; return; }
+    showDashboard(currentUser);
+  } catch (err) {
+    showAlert('login-error', err.message);
+  }
+}
+
+async function handleRegister() {
+  clearAlerts();
+  const name = document.getElementById('reg-name').value;
+  const email = document.getElementById('reg-email').value;
+  const password = document.getElementById('reg-password').value;
+  try {
+    const data = await apiCall('/auth/register', 'POST', { name, email, password });
+    setToken(data.token);
+    currentUser = data.user;
+    showAlert('register-success', 'Compte créé ! Redirection...', 'success');
+    setTimeout(() => { closeModal('register-modal'); showDashboard(currentUser); }, 1200);
+  } catch (err) {
+    showAlert('register-error', err.message);
+  }
+}
+
+function logout() {
+  clearToken(); currentUser = null;
+  showSite(); updateNav(null);
+}
+
+// --- Order ---
+function openOrderModal(plan) {
+  if (!getToken()) { openModal('login-modal'); return; }
+  selectedPlan = plan;
+  const info = PLANS_INFO[plan];
+  document.getElementById('order-plan-name').textContent = info.name;
+  document.getElementById('order-plan-price').textContent = info.price;
+  clearAlerts();
+  openModal('order-modal');
+}
+
+async function handleOrder() {
+  clearAlerts();
+  const paymentMethod = document.getElementById('order-payment').value;
+  if (!paymentMethod) { showAlert('order-error', 'Veuillez choisir une méthode de paiement'); return; }
+  try {
+    await apiCall('/orders', 'POST', { plan: selectedPlan, paymentMethod });
+    showAlert('order-success', '✓ Commande créée ! Vous allez recevoir les instructions par email.', 'success');
+    setTimeout(() => { closeModal('order-modal'); if (currentUser) loadDashboard(currentUser); }, 2000);
+  } catch (err) {
+    showAlert('order-error', err.message);
+  }
+}
+
+// --- Contact ---
+async function handleContact() {
+  clearAlerts();
+  const name = document.getElementById('c-name').value;
+  const email = document.getElementById('c-email').value;
+  const subject = document.getElementById('c-subject').value;
+  const message = document.getElementById('c-message').value;
+  try {
+    await apiCall('/contact', 'POST', { name, email, subject, message });
+    showAlert('contact-success', '✓ Message envoyé ! Réponse sous 24h.', 'success');
+    ['c-name','c-email','c-message'].forEach(id => document.getElementById(id).value = '');
+  } catch (err) {
+    showAlert('contact-error', err.message);
+  }
+}
+
+// --- FAQ ---
+function toggleFaq(el) {
+  const item = el.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+// --- Smooth scroll ---
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+  });
+});
+
+// --- Auto-login on reload ---
+(async () => {
+  const token = getToken();
+  if (!token) return;
+  try {
+    const user = await apiCall('/auth/me');
+    currentUser = user;
+    if (user.role === 'admin') { updateNav(user); return; }
+    showDashboard(user);
+  } catch { clearToken(); }
+})();
+</script>
+</body>
+</html>

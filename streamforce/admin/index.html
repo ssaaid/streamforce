@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreamForce — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #08090d; --surface: #0f1118; --surface2: #161922;
+  --border: rgba(255,255,255,0.07); --accent: #e63c2f;
+  --text: #f0f0ef; --muted: #6b7280;
+  --success: #4ade80; --danger: #ef4444; --gold: #f5c842;
+}
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; display: flex; min-height: 100vh; }
+
+/* LOGIN */
+#login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; width:100%; }
+.login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 3rem; width: 100%; max-width: 400px; }
+.login-box h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; letter-spacing: 2px; margin-bottom: 0.3rem; }
+.login-box h1 span { color: var(--accent); }
+.login-box p { color: var(--muted); font-size: 0.88rem; margin-bottom: 2rem; }
+
+/* SIDEBAR */
+#admin-app { display: none; width: 100%; }
+#admin-app.visible { display: flex; }
+.sidebar { width: 240px; background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem; display: flex; flex-direction: column; min-height: 100vh; position: sticky; top: 0; flex-shrink: 0; }
+.sidebar-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 2px; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+.sidebar-logo span { color: var(--accent); }
+.sidebar-logo small { display: block; font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 400; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: -0.3rem; }
+nav a { display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 1rem; border-radius: 10px; text-decoration: none; color: var(--muted); font-size: 0.9rem; font-weight: 500; transition: background 0.15s, color 0.15s; margin-bottom: 0.3rem; cursor: pointer; }
+nav a:hover { background: var(--surface2); color: var(--text); }
+nav a.active { background: rgba(230,60,47,0.12); color: var(--accent); }
+nav a .icon { font-size: 1.1rem; width: 20px; text-align: center; }
+.badge-count { margin-left: auto; background: var(--accent); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 100px; }
+.sidebar-bottom { margin-top: auto; }
+.admin-name { font-size: 0.82rem; color: var(--muted); padding: 1rem 0; border-top: 1px solid var(--border); }
+.admin-name strong { color: var(--text); display: block; }
+
+/* MAIN */
+.main { flex: 1; padding: 2.5rem; overflow-x: hidden; }
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; letter-spacing: 1px; margin-bottom: 0.3rem; }
+.page-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 2rem; }
+
+/* STATS */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; }
+.stat-card .s-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+.stat-card .s-value { font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; line-height: 1; }
+.stat-card .s-value.red { color: var(--accent); }
+.stat-card .s-value.green { color: var(--success); }
+.stat-card .s-value.gold { color: var(--gold); }
+
+/* TABLE */
+.table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.table-header { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border); }
+.table-header h3 { font-size: 0.95rem; font-weight: 600; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th { text-align: left; color: var(--muted); font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; padding: 0.9rem 1.5rem; border-bottom: 1px solid var(--border); font-weight: 500; }
+td { padding: 0.9rem 1.5rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+.tag { display: inline-block; padding: 0.25rem 0.7rem; border-radius: 100px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.tag-pending { background: rgba(245,200,66,0.15); color: var(--gold); }
+.tag-confirmed, .tag-active { background: rgba(74,222,128,0.15); color: var(--success); }
+.tag-rejected, .tag-suspended { background: rgba(239,68,68,0.15); color: var(--danger); }
+.tag-admin { background: rgba(230,60,47,0.15); color: var(--accent); }
+.tag-none { background: rgba(107,114,128,0.15); color: var(--muted); }
+
+/* BUTTONS */
+.btn { padding: 0.4rem 0.9rem; border-radius: 7px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: opacity 0.2s; }
+.btn:hover { opacity: 0.8; }
+.btn-confirm { background: rgba(74,222,128,0.15); color: var(--success); }
+.btn-reject { background: rgba(239,68,68,0.15); color: var(--danger); }
+.btn-activate { background: rgba(230,60,47,0.15); color: var(--accent); }
+.btn-suspend { background: rgba(245,200,66,0.15); color: var(--gold); }
+.btn-delete { background: rgba(239,68,68,0.15); color: var(--danger); }
+.btn-primary { background: var(--accent); color: #fff; padding: 0.6rem 1.2rem; border-radius: 8px; }
+.actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* FORM */
+.form-group { margin-bottom: 1.1rem; }
+.form-group label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--muted); margin-bottom: 0.4rem; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.65rem 0.9rem; color: var(--text); font-family: inherit; font-size: 0.88rem; outline: none;
+  transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+.form-group select option { background: var(--surface2); }
+.btn-full { width: 100%; padding: 0.85rem; border-radius: 9px; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none; background: var(--accent); color: #fff; font-family: inherit; transition: background 0.2s; }
+.btn-full:hover { background: #c9321f; }
+.alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.84rem; margin-bottom: 1rem; display: none; }
+.alert.show { display: block; }
+.alert-error { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; }
+.alert-success { background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.25); color: #86efac; }
+.empty { color: var(--muted); font-size: 0.88rem; padding: 2rem 1.5rem; text-align: center; }
+
+/* Messages */
+.msg-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; }
+.msg-card.unread { border-color: rgba(230,60,47,0.4); }
+.msg-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem; }
+.msg-name { font-weight: 600; font-size: 0.9rem; }
+.msg-date { font-size: 0.75rem; color: var(--muted); }
+.msg-subject { font-size: 0.8rem; color: var(--accent); margin-bottom: 0.5rem; }
+.msg-text { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+.msg-email { font-size: 0.8rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>STREAM<span>FORCE</span></h1>
+    <p>Panneau d'administration — accès restreint</p>
+    <div class="alert alert-error" id="login-error"></div>
+    <div class="form-group"><label>Email admin</label><input type="email" id="l-email" placeholder="admin@streamforce.com" value="admin@streamforce.com"></div>
+    <div class="form-group"><label>Mot de passe</label><input type="password" id="l-pass" placeholder="••••••••" value="Admin123!"></div>
+    <button class="btn-full" onclick="adminLogin()">Accéder au panneau →</button>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="admin-app">
+  <div class="sidebar">
+    <div class="sidebar-logo">STREAM<span>FORCE</span><small>Admin Panel</small></div>
+    <nav>
+      <a class="active" onclick="showPage('dashboard')"><span class="icon">📊</span> Tableau de bord</a>
+      <a onclick="showPage('users')"><span class="icon">👥</span> Clients <span class="badge-count" id="badge-users">0</span></a>
+      <a onclick="showPage('orders')"><span class="icon">📦</span> Commandes <span class="badge-count" id="badge-orders" style="display:none;">0</span></a>
+      <a onclick="showPage('messages')"><span class="icon">✉️</span> Messages <span class="badge-count" id="badge-msgs" style="display:none;">0</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="admin-name"><strong id="admin-name-display">Admin</strong>Connecté</div>
+      <a href="/" style="font-size:0.82rem;color:var(--muted);text-decoration:none;">← Retour au site</a>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">TABLEAU DE BORD</div>
+      <div class="page-sub">Vue d'ensemble de votre activité StreamForce</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="s-label">Total clients</div><div class="s-value" id="s-clients">—</div></div>
+        <div class="stat-card"><div class="s-label">Actifs</div><div class="s-value green" id="s-active">—</div></div>
+        <div class="stat-card"><div class="s-label">Commandes en attente</div><div class="s-value gold" id="s-pending">—</div></div>
+        <div class="stat-card"><div class="s-label">Revenus confirmés</div><div class="s-value red" id="s-revenue">—</div></div>
+        <div class="stat-card"><div class="s-label">Messages non lus</div><div class="s-value" id="s-msgs">—</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex-wrap:wrap;">
+        <div class="table-wrap">
+          <div class="table-header"><h3>Accès rapide</h3></div>
+          <div style="padding:1.2rem 1.5rem;display:flex;flex-direction:column;gap:0.8rem;">
+            <button class="btn btn-activate" style="text-align:left;padding:0.8rem 1rem;border-radius:10px;font-size:0.88rem;" onclick="showPage('orders')">📦 Gérer les commandes en attente</button>
+            <button class="btn btn-confirm" style="text-align:left;padding:0.8rem 1rem;border-radius:10px;font-size:0.88rem;" onclick="showPage('users')">👥 Gérer les clients</button>
+            <button class="btn btn-suspend" style="text-align:left;padding:0.8rem 1rem;border-radius:10px;font-size:0.88rem;" onclick="showPage('messages')">✉️ Lire les messages</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header"><h3>Instructions de démarrage</h3></div>
+          <div style="padding:1.2rem 1.5rem;font-size:0.85rem;color:var(--muted);line-height:1.9;">
+            1. Un client commande un plan<br>
+            2. Il choisit son moyen de paiement<br>
+            3. Vous recevez la commande ici<br>
+            4. Après paiement reçu → <strong style="color:var(--success);">Confirmer</strong><br>
+            5. Son compte est automatiquement activé<br>
+            6. Il peut se connecter et accéder au service
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS PAGE -->
+    <div class="page" id="page-users">
+      <div class="page-title">CLIENTS</div>
+      <div class="page-sub">Gérez vos abonnés et leurs plans</div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>Liste des clients</h3>
+          <button class="btn btn-primary" onclick="loadUsers()">↻ Actualiser</button>
+        </div>
+        <div id="users-table-wrap"><p class="empty">Chargement...</p></div>
+      </div>
+    </div>
+
+    <!-- ORDERS PAGE -->
+    <div class="page" id="page-orders">
+      <div class="page-title">COMMANDES</div>
+      <div class="page-sub">Validez les paiements et activez les abonnements</div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>Toutes les commandes</h3>
+          <button class="btn btn-primary" onclick="loadOrders()">↻ Actualiser</button>
+        </div>
+        <div id="orders-table-wrap"><p class="empty">Chargement...</p></div>
+      </div>
+    </div>
+
+    <!-- MESSAGES PAGE -->
+    <div class="page" id="page-messages">
+      <div class="page-title">MESSAGES</div>
+      <div class="page-sub">Messages reçus via le formulaire de contact</div>
+      <button class="btn btn-primary" style="margin-bottom:1.5rem;" onclick="loadMessages()">↻ Actualiser</button>
+      <div id="messages-wrap"><p class="empty">Chargement...</p></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = '/api';
+let adminToken = null;
+
+async function apiCall(path, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (adminToken) opts.headers['Authorization'] = 'Bearer ' + adminToken;
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erreur');
+  return data;
+}
+
+async function adminLogin() {
+  const email = document.getElementById('l-email').value;
+  const pass = document.getElementById('l-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.classList.remove('show');
+  try {
+    const data = await apiCall('/auth/login', 'POST', { email, password: pass });
+    if (data.user.role !== 'admin') throw new Error('Accès réservé aux administrateurs');
+    adminToken = data.token;
+    document.getElementById('admin-name-display').textContent = data.user.name;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-app').classList.add('visible');
+    loadStats();
+    loadUsers();
+    loadOrders();
+    loadMessages();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+  }
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.sidebar nav a')[['dashboard','users','orders','messages'].indexOf(name)].classList.add('active');
+}
+
+async function loadStats() {
+  try {
+    const s = await apiCall('/admin/stats');
+    document.getElementById('s-clients').textContent = s.totalClients;
+    document.getElementById('s-active').textContent = s.activeClients;
+    document.getElementById('s-pending').textContent = s.pendingOrders;
+    document.getElementById('s-revenue').textContent = s.totalRevenue + '€';
+    document.getElementById('s-msgs').textContent = s.unreadMessages;
+    document.getElementById('badge-users').textContent = s.totalClients;
+    if (s.pendingOrders > 0) { document.getElementById('badge-orders').style.display = ''; document.getElementById('badge-orders').textContent = s.pendingOrders; }
+    if (s.unreadMessages > 0) { document.getElementById('badge-msgs').style.display = ''; document.getElementById('badge-msgs').textContent = s.unreadMessages; }
+  } catch {}
+}
+
+async function loadUsers() {
+  const wrap = document.getElementById('users-table-wrap');
+  try {
+    const users = await apiCall('/admin/users');
+    const clients = users.filter(u => u.role !== 'admin');
+    if (!clients.length) { wrap.innerHTML = '<p class="empty">Aucun client pour le moment.</p>'; return; }
+    wrap.innerHTML = `<table>
+      <thead><tr><th>Nom</th><th>Email</th><th>Plan</th><th>Expiry</th><th>Statut</th><th>Actions</th></tr></thead>
+      <tbody>${clients.map(u => {
+        const expired = u.planExpiry && new Date(u.planExpiry) < new Date();
+        const planTag = u.plan ? `<span class="tag tag-${expired ? 'rejected' : 'confirmed'}">${u.plan}</span>` : '<span class="tag tag-none">Aucun</span>';
+        const expiry = u.planExpiry ? new Date(u.planExpiry).toLocaleDateString('fr-FR') : '—';
+        const statusTag = `<span class="tag tag-${u.status === 'active' ? 'active' : 'suspended'}">${u.status === 'active' ? 'Actif' : 'Suspendu'}</span>`;
+        return `<tr>
+          <td>${u.name}</td><td style="color:var(--muted);">${u.email}</td>
+          <td>${planTag}</td><td style="font-size:0.82rem;color:var(--muted);">${expiry}</td>
+          <td>${statusTag}</td>
+          <td><div class="actions">
+            <select onchange="activatePlan(${u.id}, this.value); this.value=''" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.78rem;cursor:pointer;">
+              <option value="">Activer plan...</option>
+              <option value="mensuel">Mensuel</option>
+              <option value="trimestriel">Trimestriel</option>
+              <option value="annuel">Annuel</option>
+            </select>
+            <button class="btn btn-${u.status === 'active' ? 'suspend' : 'confirm'}" onclick="toggleStatus(${u.id}, '${u.status}')">${u.status === 'active' ? 'Suspendre' : 'Réactiver'}</button>
+            <button class="btn btn-delete" onclick="deleteUser(${u.id}, '${u.name}')">Supprimer</button>
+          </div></td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+  } catch (err) { wrap.innerHTML = `<p class="empty">Erreur: ${err.message}</p>`; }
+}
+
+async function activatePlan(id, plan) {
+  if (!plan) return;
+  try { await apiCall(`/admin/users/${id}`, 'PUT', { plan }); loadUsers(); loadStats(); } catch (err) { alert(err.message); }
+}
+
+async function toggleStatus(id, currentStatus) {
+  const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+  try { await apiCall(`/admin/users/${id}`, 'PUT', { status: newStatus }); loadUsers(); } catch (err) { alert(err.message); }
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Supprimer le client "${name}" ?`)) return;
+  try { await apiCall(`/admin/users/${id}`, 'DELETE'); loadUsers(); loadStats(); } catch (err) { alert(err.message); }
+}
+
+async function loadOrders() {
+  const wrap = document.getElementById('orders-table-wrap');
+  try {
+    const orders = await apiCall('/admin/orders');
+    if (!orders.length) { wrap.innerHTML = '<p class="empty">Aucune commande pour le moment.</p>'; return; }
+    wrap.innerHTML = `<table>
+      <thead><tr><th>Client</th><th>Plan</th><th>Prix</th><th>Paiement</th><th>Statut</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody>${orders.slice().reverse().map(o => `<tr>
+        <td><div>${o.userName}</div><div style="font-size:0.78rem;color:var(--muted)">${o.userEmail}</div></td>
+        <td><strong>${o.planName}</strong></td>
+        <td style="color:var(--accent);font-weight:600;">${o.price}€</td>
+        <td style="color:var(--muted);font-size:0.82rem;">${o.paymentMethod}</td>
+        <td><span class="tag tag-${o.status}">${o.status === 'pending' ? 'En attente' : o.status === 'confirmed' ? 'Confirmé' : 'Refusé'}</span></td>
+        <td style="font-size:0.8rem;color:var(--muted)">${new Date(o.createdAt).toLocaleDateString('fr-FR')}</td>
+        <td><div class="actions">
+          ${o.status === 'pending' ? `<button class="btn btn-confirm" onclick="updateOrder(${o.id},'confirmed')">✓ Confirmer</button><button class="btn btn-reject" onclick="updateOrder(${o.id},'rejected')">✗ Refuser</button>` : '—'}
+        </div></td>
+      </tr>`).join('')}</tbody></table>`;
+  } catch (err) { wrap.innerHTML = `<p class="empty">Erreur: ${err.message}</p>`; }
+}
+
+async function updateOrder(id, status) {
+  try { await apiCall(`/admin/orders/${id}`, 'PUT', { status }); loadOrders(); loadUsers(); loadStats(); } catch (err) { alert(err.message); }
+}
+
+async function loadMessages() {
+  const wrap = document.getElementById('messages-wrap');
+  try {
+    const msgs = await apiCall('/admin/contacts');
+    if (!msgs.length) { wrap.innerHTML = '<p class="empty">Aucun message pour le moment.</p>'; return; }
+    wrap.innerHTML = msgs.map(m => `
+      <div class="msg-card ${m.read ? '' : 'unread'}" id="msg-${m.id}">
+        <div class="msg-meta">
+          <div>
+            <span class="msg-name">${m.name}</span>
+            ${!m.read ? '<span class="tag tag-pending" style="margin-left:0.5rem;font-size:0.7rem;">Nouveau</span>' : ''}
+          </div>
+          <span class="msg-date">${new Date(m.createdAt).toLocaleDateString('fr-FR')}</span>
+        </div>
+        <div class="msg-email">${m.email}</div>
+        <div class="msg-subject">📌 ${m.subject}</div>
+        <div class="msg-text">${m.message}</div>
+        ${!m.read ? `<button class="btn btn-confirm" style="margin-top:0.8rem;" onclick="markRead(${m.id})">✓ Marquer comme lu</button>` : ''}
+      </div>`).join('');
+  } catch (err) { wrap.innerHTML = `<p class="empty">Erreur: ${err.message}</p>`; }
+}
+
+async function markRead(id) {
+  try { await apiCall(`/admin/contacts/${id}/read`, 'PUT'); loadMessages(); loadStats(); } catch {}
+}
+
+// Auto-refresh stats every 30s
+setInterval(loadStats, 30000);
+</script>
+</body>
+</html>
