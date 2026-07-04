@@ -2,17 +2,28 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-// En production, stocker sur le disque persistant Render (/data)
-const DB_PATH = process.env.NODE_ENV === 'production'
-  ? '/data'
-  : path.join(__dirname, '..', 'db');
+// En production, stocker sur le disque persistant Render (/data).
+// Si /data n'est pas encore monté (premier déploiement), fallback sur db/ local.
+function resolveDbPath() {
+  if (process.env.NODE_ENV !== 'production') return path.join(__dirname, '..', 'db');
+  try {
+    fs.mkdirSync('/data', { recursive: true });
+    fs.accessSync('/data', fs.constants.W_OK);
+    return '/data';
+  } catch {
+    console.warn('⚠️  /data non accessible — fallback sur le répertoire local (données non persistantes)');
+    return path.join(__dirname, '..', 'db');
+  }
+}
+
+const DB_PATH = resolveDbPath();
 
 const USERS_FILE    = path.join(DB_PATH, 'users.json');
 const ORDERS_FILE   = path.join(DB_PATH, 'orders.json');
 const CONTACTS_FILE = path.join(DB_PATH, 'contacts.json');
 
 function initDB() {
-  if (!fs.existsSync(DB_PATH)) fs.mkdirSync(DB_PATH, { recursive: true });
+  console.log(`📁 Stockage DB : ${DB_PATH}`);
 
   if (!fs.existsSync(USERS_FILE)) {
     // ADMIN_PASSWORD est garanti non-vide par la vérification dans server.js
