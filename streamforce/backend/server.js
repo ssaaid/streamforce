@@ -1,4 +1,19 @@
 require('dotenv').config();
+
+// ── Fail fast : variables d'environnement critiques ──────────────
+const REQUIRED_ENV = ['JWT_SECRET', 'ADMIN_EMAIL', 'ADMIN_PASSWORD'];
+const missing = REQUIRED_ENV.filter(k => !process.env[k]);
+if (missing.length) {
+  console.error(`\n❌ Variables d'environnement manquantes : ${missing.join(', ')}`);
+  console.error('   Définissez-les dans .env (dev) ou dans le dashboard Render (prod).\n');
+  process.exit(1);
+}
+
+if (process.env.JWT_SECRET.length < 32) {
+  console.error('\n❌ JWT_SECRET trop court — minimum 32 caractères.\n');
+  process.exit(1);
+}
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -43,5 +58,5 @@ app.listen(PORT, () => {
   console.log(`\n🚀 StreamForce API démarrée sur http://localhost:${PORT}`);
   console.log(`📺 Frontend: http://localhost:${PORT}`);
   console.log(`🔐 Admin:    http://localhost:${PORT}/admin-panel`);
-  console.log(`🔑 Admin login: ${process.env.ADMIN_EMAIL} / ${process.env.ADMIN_PASSWORD}\n`);
+  console.log(`🔑 Admin login: ${process.env.ADMIN_EMAIL}\n`);
 });

@@ -1,9 +1,19 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const { contacts } = require('../db/database');
 
+// 3 messages par IP par heure
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de messages envoyés — réessayez dans une heure.' },
+});
+
 // POST /api/contact
-router.post('/', (req, res) => {
+router.post('/', contactLimiter, (req, res) => {
   try {
     const { name, email, subject, message } = req.body;
 

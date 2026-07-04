@@ -5,6 +5,10 @@ services:
     rootDir: streamforce/backend
     buildCommand: npm install
     startCommand: node server.js
+    disk:
+      name: streamforce-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production

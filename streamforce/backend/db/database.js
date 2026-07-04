@@ -2,22 +2,26 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const DB_PATH = path.join(__dirname, '..', 'db');
-const USERS_FILE = path.join(DB_PATH, 'users.json');
-const ORDERS_FILE = path.join(DB_PATH, 'orders.json');
+// En production, stocker sur le disque persistant Render (/data)
+const DB_PATH = process.env.NODE_ENV === 'production'
+  ? '/data'
+  : path.join(__dirname, '..', 'db');
+
+const USERS_FILE    = path.join(DB_PATH, 'users.json');
+const ORDERS_FILE   = path.join(DB_PATH, 'orders.json');
 const CONTACTS_FILE = path.join(DB_PATH, 'contacts.json');
 
-// Init DB directory and files
 function initDB() {
   if (!fs.existsSync(DB_PATH)) fs.mkdirSync(DB_PATH, { recursive: true });
 
   if (!fs.existsSync(USERS_FILE)) {
-    const adminHash = bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'Admin123!', 10);
+    // ADMIN_PASSWORD est garanti non-vide par la vérification dans server.js
+    const adminHash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10);
     fs.writeFileSync(USERS_FILE, JSON.stringify([
       {
         id: 1,
         name: 'Admin',
-        email: process.env.ADMIN_EMAIL || 'admin@streamforce.com',
+        email: process.env.ADMIN_EMAIL,
         password: adminHash,
         role: 'admin',
         plan: null,
@@ -28,13 +32,12 @@ function initDB() {
     ], null, 2));
   }
 
-  if (!fs.existsSync(ORDERS_FILE)) fs.writeFileSync(ORDERS_FILE, JSON.stringify([], null, 2));
+  if (!fs.existsSync(ORDERS_FILE))   fs.writeFileSync(ORDERS_FILE,   JSON.stringify([], null, 2));
   if (!fs.existsSync(CONTACTS_FILE)) fs.writeFileSync(CONTACTS_FILE, JSON.stringify([], null, 2));
 
   console.log('✅ Base de données initialisée');
 }
 
-// Generic read/write helpers
 function readFile(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -49,13 +52,12 @@ function nextId(arr) {
   return arr.length > 0 ? Math.max(...arr.map(i => i.id)) + 1 : 1;
 }
 
-// Users
 const users = {
-  all: () => readFile(USERS_FILE),
-  findById: (id) => readFile(USERS_FILE).find(u => u.id === id),
-  findByEmail: (email) => readFile(USERS_FILE).find(u => u.email === email),
+  all:         ()           => readFile(USERS_FILE),
+  findById:    (id)         => readFile(USERS_FILE).find(u => u.id === id),
+  findByEmail: (email)      => readFile(USERS_FILE).find(u => u.email === email),
   create: (data) => {
-    const arr = readFile(USERS_FILE);
+    const arr  = readFile(USERS_FILE);
     const user = { id: nextId(arr), ...data, createdAt: new Date().toISOString() };
     arr.push(user);
     writeFile(USERS_FILE, arr);
@@ -75,12 +77,11 @@ const users = {
   }
 };
 
-// Orders
 const orders = {
-  all: () => readFile(ORDERS_FILE),
-  findByUser: (userId) => readFile(ORDERS_FILE).filter(o => o.userId === userId),
+  all:         ()       => readFile(ORDERS_FILE),
+  findByUser:  (userId) => readFile(ORDERS_FILE).filter(o => o.userId === userId),
   create: (data) => {
-    const arr = readFile(ORDERS_FILE);
+    const arr   = readFile(ORDERS_FILE);
     const order = { id: nextId(arr), ...data, createdAt: new Date().toISOString() };
     arr.push(order);
     writeFile(ORDERS_FILE, arr);
@@ -96,11 +97,10 @@ const orders = {
   }
 };
 
-// Contacts
 const contacts = {
   all: () => readFile(CONTACTS_FILE),
   create: (data) => {
-    const arr = readFile(CONTACTS_FILE);
+    const arr     = readFile(CONTACTS_FILE);
     const contact = { id: nextId(arr), ...data, createdAt: new Date().toISOString(), read: false };
     arr.push(contact);
     writeFile(CONTACTS_FILE, arr);

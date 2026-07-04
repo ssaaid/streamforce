@@ -16,3 +16,6 @@ npm-debug.log*
 # Build output
 dist/
 build/
+
+# DB data files (generated at runtime)
+streamforce/backend/db/*.json
